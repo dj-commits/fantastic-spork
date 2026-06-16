@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://ti0gp7lxhwhq"]
+
+[ext_resource type="PackedScene" uid="uid://b6y54guj5bf5y" path="res://scenes/camera_rig.tscn" id="1_f3sb7"]
+[ext_resource type="PackedScene" uid="uid://cit2qpyfm7g3b" path="res://scenes/ground.tscn" id="2_rwgxs"]
+[ext_resource type="PackedScene" uid="uid://5g5nt0nwpff6" path="res://scenes/full_cover.tscn" id="3_4wyf3"]
+
+[node name="World" type="Node3D" unique_id=2081128067]
+
+[node name="CameraRig" parent="." unique_id=969316036 instance=ExtResource("1_f3sb7")]
+transform = Transform3D(1, 0, 0, 0, 0.81915206, 0.57357645, 0, -0.57357645, 0.81915206, 7.933, 2.212, 7.99)
+
+[node name="Ground" parent="." unique_id=477440008 instance=ExtResource("2_rwgxs")]
+
+[node name="FullCoverContainer" type="Node3D" parent="." unique_id=994620643]
+
+[node name="FullCover" parent="FullCoverContainer" unique_id=1097359019 instance=ExtResource("3_4wyf3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0005, 0)
+
+[node name="FullCover2" parent="FullCoverContainer" unique_id=1082923514 instance=ExtResource("3_4wyf3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)

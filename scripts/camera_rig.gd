@@ -22,15 +22,20 @@ func _unhandled_input(event: InputEvent) -> void:
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	var dir := Vector3.ZERO
+	var mouse_pan := UserSettings.MousePanEnabled
+	var m_pos := get_viewport().get_mouse_position()
+	var w_size := get_viewport().get_visible_rect().size
 
-	if m_pos.y <= pan_edge_offset or Input.is_action_pressed("cam_pan_up"):
+	# Vertical
+	if Input.is_action_pressed("cam_pan_up") or (mouse_pan and m_pos.y <= pan_edge_offset):
 		dir.z -= 1
-	elif m_pos.y >= w_size.y - pan_edge_offset or Input.is_action_pressed("cam_pan_down"):
+	elif Input.is_action_pressed("cam_pan_down") or (mouse_pan and m_pos.y >= w_size.y - pan_edge_offset):
 		dir.z += 1
 
-	if m_pos.x <= pan_edge_offset or Input.is_action_pressed("cam_pan_left"):
+	# Horizontal
+	if Input.is_action_pressed("cam_pan_left") or (mouse_pan and m_pos.x <= pan_edge_offset):
 		dir.x -= 1
-	elif m_pos.x >= w_size.x - pan_edge_offset or Input.is_action_pressed("cam_pan_right"):
+	elif Input.is_action_pressed("cam_pan_right") or (mouse_pan and m_pos.x >= w_size.x - pan_edge_offset):
 		dir.x += 1
 
 	if dir != Vector3.ZERO:

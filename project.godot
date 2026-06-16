@@ -15,6 +15,10 @@ run/main_scene="uid://ti0gp7lxhwhq"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+UserSettings="*uid://dcnv738oxn8lr"
+
 [display]
 
 window/size/viewport_width=1920
@@ -42,6 +46,15 @@ cam_pan_right={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":68,"key_label":0,"unicode":100,"location":0,"echo":false,"script":null)
 ]
 }
+
+[layer_names]
+
+3d_physics/layer_1="Ground"
+3d_physics/layer_2="Cover"
+3d_physics/layer_3="Player"
+3d_physics/layer_4="Enemy"
+3d_physics/layer_5="Destructible"
+3d_physics/layer_6="Non-Destructible"
 
 [physics]
 
