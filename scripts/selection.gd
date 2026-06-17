@@ -11,6 +11,11 @@ extends Control
 #   * Left-click empty ground   -> clear the selection
 #   * Left-click + drag a box   -> select every unit inside the box
 #   * Right-click ground        -> send the selected units there
+#   * Ctrl + number (1-9, 0)    -> move selected units into that group only
+#                                  (or toggle them out if already in it)
+#   * Ctrl+Shift + number       -> ALSO add them to that group (keep them in
+#                                  any other groups too — StarCraft style)
+#   * number (1-9, 0)           -> re-select everything in that group
 
 # How far (in pixels) the mouse must move before we count it as a drag rather
 # than a click. Stops a tiny hand-wobble from turning a click into a box select.
@@ -23,6 +28,12 @@ const FORMATION_SPACING: float = 1.2
 var is_dragging: bool = false
 var drag_start: Vector2 = Vector2.ZERO  # screen point where the left button went down
 var drag_now: Vector2 = Vector2.ZERO    # where the mouse is right now while dragging
+
+# Two presses of the same number key closer together than this (in seconds)
+# count as a "double tap". 0.3s is a comfortable, not-too-twitchy window.
+const DOUBLE_TAP_TIME: float = 0.3
+var last_tap_digit: int = -1            # which group number was tapped last (-1 = none)
+var last_tap_time: float = 0.0          # when that tap happened, in seconds
 
 func _unhandled_input(event: InputEvent) -> void:
 	# --- Left button pressed: begin a (possible) box selection ---
@@ -43,6 +54,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed \
 			and event.button_index == MOUSE_BUTTON_RIGHT:
 		_issue_move_order(event.position)
+	# --- Number keys: save / recall control groups (see _handle_group_key) ---
+	# Ignore "echo" events, which fire repeatedly while a key is held down.
+	elif event is InputEventKey and event.pressed and not event.echo:
+		_handle_group_key(event)
 
 # --- Selection -------------------------------------------------------------
 
@@ -118,6 +133,107 @@ func _formation_points(center: Vector3, count: int) -> Array[Vector3]:
 		var offset_z := (row - (columns - 1) * 0.5) * FORMATION_SPACING
 		points.append(center + Vector3(offset_x, 0.0, offset_z))
 	return points
+
+# --- Control groups --------------------------------------------------------
+#
+# A "control group" is a saved selection you can bring back later with one key.
+# We store each group as a real Godot node-group named "control_group_<digit>".
+# The nice side effect: if a unit is ever destroyed, Godot removes it from its
+# node-groups automatically, so a control group can never point at a unit that
+# no longer exists.
+#
+# A unit is ALLOWED to belong to several groups at once, but it only happens
+# when the player asks for it (Ctrl+Shift). The plain Ctrl assignment instead
+# MOVES units into a group (clearing their old ones), so you never get overlap
+# by accident.
+
+# The shared start of every control-group name, e.g. "control_group_2".
+const GROUP_PREFIX := "control_group_"
+
+func _handle_group_key(event: InputEventKey) -> void:
+	# We only care about the top-row number keys 1-9 and 0. We read the
+	# PHYSICAL key (its position on the keyboard) rather than the letter it
+	# types, so this still works on keyboard layouts where that row isn't
+	# digits. KEY_0..KEY_9 are consecutive codes, so subtracting KEY_0 turns
+	# the key into the plain digit (0-9) it sits on.
+	var key := event.physical_keycode
+	if key < KEY_0 or key > KEY_9:
+		return
+	var digit := key - KEY_0
+	if event.ctrl_pressed and event.shift_pressed:
+		_add_to_group(digit)    # Ctrl+Shift -> add, allowed in several groups
+	elif event.ctrl_pressed:
+		_assign_group(digit)    # Ctrl       -> move into this group only
+	else:
+		_tap_group(digit)       # no Ctrl    -> select the group (or double-tap)
+
+# Ctrl+Shift assignment: add the selected units to group "digit" WITHOUT
+# removing them from any other group. This is the StarCraft-style behaviour
+# where one unit can sit in several control groups at once. Because it only
+# runs when the player deliberately holds Shift, the "splitting" overlap can
+# never happen by accident.
+func _add_to_group(digit: int) -> void:
+	var group := _group_name(digit)
+	for unit in _selected_units():
+		unit.add_to_group(group)    # harmless if the unit is already a member
+
+# Ctrl assignment: each selected unit MOVES into group "digit" (toggling out
+# if it's already in it). "Move" means it leaves whatever group it was in.
+func _assign_group(digit: int) -> void:
+	var group := _group_name(digit)
+	for unit in _selected_units():
+		if unit.is_in_group(group):
+			unit.remove_from_group(group)   # already in THIS group -> subtract
+		else:
+			# A unit can only be in one control group, so first take it out of
+			# any group it was already in, then add it to this one. This is what
+			# makes "splitting units off into a new group" leave the old group.
+			_clear_control_groups(unit)
+			unit.add_to_group(group)
+	# Note: one selected unit is enough — that simply makes a group of one.
+
+# Remove a unit from every control group it currently belongs to. We leave all
+# its other node-groups (like "units") alone — only the control-group tags go.
+func _clear_control_groups(unit: Node) -> void:
+	for group_name in unit.get_groups():
+		if String(group_name).begins_with(GROUP_PREFIX):
+			unit.remove_from_group(group_name)
+
+# Re-select every unit saved in group "digit" (and deselect everything else).
+func _recall_group(digit: int) -> void:
+	var group := _group_name(digit)
+	# If nothing has been saved to this group yet, leave the current selection
+	# untouched instead of clearing it (matches how most RTS games behave).
+	if get_tree().get_nodes_in_group(group).is_empty():
+		return
+	for unit in get_tree().get_nodes_in_group("units"):
+		unit.set_selected(unit.is_in_group(group))
+
+# Handle a number key tapped WITHOUT Ctrl. A single tap recalls the group; a
+# quick second tap of the same number can instead clear the whole selection,
+# but only if the player has switched that option on in UserSettings.
+func _tap_group(digit: int) -> void:
+	# Time.get_ticks_msec() is the milliseconds since the game started; dividing
+	# by 1000 turns it into seconds so it matches DOUBLE_TAP_TIME.
+	var now := Time.get_ticks_msec() / 1000.0
+	# A double tap = same number as last time, AND soon enough after it.
+	var is_double_tap := digit == last_tap_digit and (now - last_tap_time) <= DOUBLE_TAP_TIME
+	last_tap_digit = digit
+	last_tap_time = now
+
+	# This is the "feature flag" check — same idea as UserSettings.MousePanEnabled.
+	if is_double_tap and UserSettings.DoubleTapDeselectEnabled:
+		last_tap_digit = -1     # reset so a third tap isn't read as another double
+		_deselect_all()
+		return
+	_recall_group(digit)
+
+func _deselect_all() -> void:
+	for unit in get_tree().get_nodes_in_group("units"):
+		unit.set_selected(false)
+
+func _group_name(digit: int) -> StringName:
+	return GROUP_PREFIX + str(digit)
 
 # --- Shared helpers --------------------------------------------------------
 
