@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://xg1isbwjppa2"]
+
+[ext_resource type="Script" uid="uid://b5hdoeccwq7ij" path="res://scripts/pawn.gd" id="1_pawn"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_t8t6i"]
+radius = 0.3
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_t8t6i"]
+radius = 0.3
+height = 1.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 0.35
+outer_radius = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ring"]
+shading_mode = 0
+albedo_color = Color(0.3, 1, 0.3, 1)
+
+[node name="Pawn" type="CharacterBody3D" unique_id=2093764878]
+collision_layer = 4
+collision_mask = 59
+script = ExtResource("1_pawn")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2075226014]
+mesh = SubResource("CapsuleMesh_t8t6i")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1922553423]
+shape = SubResource("CapsuleShape3D_t8t6i")
+
+[node name="SelectionRing" type="MeshInstance3D" parent="." unique_id=1500000001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.88, 0)
+mesh = SubResource("TorusMesh_ring")
+surface_material_override/0 = SubResource("StandardMaterial3D_ring")
