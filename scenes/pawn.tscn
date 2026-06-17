@@ -35,5 +35,4 @@ mesh = SubResource("TorusMesh_ring")
 surface_material_override/0 = SubResource("StandardMaterial3D_ring")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1500000002]
-path_desired_distance = 0.5
 target_desired_distance = 0.5

@@ -5,6 +5,13 @@ extends CharacterBody3D
 # following a path (worked out by the NavigationAgent3D) that bends around
 # obstacles like the cover boxes instead of trying to plow straight through.
 
+## Within this many meters of the destination we ease our speed down, so we
+## glide to a gentle stop instead of charging in at full speed and overshooting.
+@export var arrival_distance: float = 3.5
+## Once we're this close to the destination (measured flat along the ground) we
+## call it "arrived" and stop. (Measured flat — see _physics_process.)
+@export var stop_distance: float = 0.3
+
 @onready var selection_ring: MeshInstance3D = $SelectionRing
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
@@ -21,6 +28,10 @@ func _ready() -> void:
 	# Join the "units" group so the selection system can find every unit at once.
 	add_to_group("units")
 	set_selected(false)             # start unselected (ring hidden)
+	# Target our own spot to begin with, so we sit still until given an order.
+	# (A NavigationAgent3D's default target is the world origin, so without this
+	# every unit would immediately wander off toward (0,0,0) on startup.)
+	nav_agent.target_position = global_position
 
 # Highlight / un-highlight this unit. Called by the selection system.
 func set_selected(value: bool) -> void:
@@ -36,17 +47,35 @@ func _physics_process(delta: float) -> void:
 	# First work out the velocity we WANT this frame ("desired"), then ease our
 	# real velocity toward it so we speed up and slow down smoothly.
 	var desired := Vector3.ZERO
-	# is_navigation_finished() is true once we've reached the destination (or we
-	# never had one). While we still have road to cover, head for the next point.
-	if not nav_agent.is_navigation_finished():
-		# The agent hands back the next corner along the path. We flatten it
-		# (zero out the up/down part) so we only ever walk along the ground.
+
+	# How far we still are from the FINAL destination, measured FLAT along the
+	# ground (we deliberately zero out the y). This is the crux of the jitter fix:
+	# a unit's origin sits at its waist (~0.9m up), but the target and navigation
+	# mesh sit on the floor. If we left that height gap in the distance, a unit
+	# standing right on its target would still read ~0.9m away — so it could never
+	# "arrive", and kept nudging back and forth. Flat distance really hits 0.
+	var to_target := nav_agent.target_position - global_position
+	to_target.y = 0.0
+	var remaining := to_target.length()
+
+	# Keep steering until we're within stop_distance of the target. Once inside,
+	# desired stays zero, so we ease to a halt and stay put.
+	if remaining > stop_distance:
+		# The agent hands back the next corner along the path (it bends around
+		# cover). Flatten it too, so we only ever walk along the ground.
 		var next_point := nav_agent.get_next_path_position()
 		var to_next := next_point - global_position
 		to_next.y = 0.0
 		if to_next.length() > 0.01:     # guard so we never normalize a zero vector
-			# normalized() = "pure direction"; times MOVE_SPEED = "that way, full speed".
-			desired = to_next.normalized() * MOVE_SPEED
+			# Pick a speed: full speed normally, eased down over the last
+			# "arrival_distance" meters so we glide to a gentle stop.
+			var speed := MOVE_SPEED
+			if remaining < arrival_distance:
+				# remaining / arrival_distance slides from 1.0 down to 0.0 as we
+				# close in, easing the speed off the nearer we get.
+				speed = MOVE_SPEED * (remaining / arrival_distance)
+			# normalized() = "pure direction"; times speed = "that way, this fast".
+			desired = to_next.normalized() * speed
 
 	# Ease the horizontal (sideways) part of our velocity toward the desired one.
 	# move_toward() nudges a value toward a target by at most a set step, so this
