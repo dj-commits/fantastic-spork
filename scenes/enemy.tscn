@@ -14,8 +14,9 @@ sight_range = 16.0
 firing_range = 9.0
 fire_cooldown = 1.2
 projectile_scene = ExtResource("3_proj")
-stat_variance = 0.25
+stat_variance = 0.75
 auto_seek_cover = false
 
 [node name="MeshInstance3D" parent="." index="0" unique_id=2075226014]
+transform = Transform3D(0.9999709, 0.0063654697, 0.004195756, -0.00631974, 0.99992144, -0.010824988, -0.0042643244, 0.01079816, 0.9999326, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_enemy")

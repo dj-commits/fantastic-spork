@@ -6,7 +6,9 @@ var w_size: Vector2i                  # window size
 var pan_edge_offset: int = 100        # px from edge before panning kicks in
 var pan_speed: int = 6
 # --- Orbit state ---
-var cam_yaw: float = 0.0              # degrees, unclamped (full 360 spin)
+## Starting compass facing of the camera, in degrees (0 looks toward -Z; 180
+## looks toward +Z). Set per scene to point the opening view the right way.
+@export var cam_yaw: float = 0.0     # degrees, unclamped (full 360 spin)
 var cam_pitch: float = 50.0          # degrees, clamped
 const PITCH_MIN: float = 30.0
 const PITCH_MAX: float = 80.0

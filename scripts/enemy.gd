@@ -42,31 +42,55 @@ func _physics_process(delta: float) -> void:
 		to_target.y = 0.0
 		var distance := to_target.length()
 
-		if distance > firing_range:
-			move_to(target.global_position)   # too far — advance toward them
-		else:
-			move_to(global_position)          # close enough — hold position
+		# Can we actually SEE the target, or is cover / a fellow enemy in the way?
+		var clear_shot := _has_clear_shot(target)
 
-		if _time_until_next_shot <= 0.0:
+		# Hold still only when we're in range AND have a clear shot. Otherwise keep
+		# moving — either to close the distance or to step around the obstruction.
+		if distance <= firing_range and clear_shot:
+			move_to(global_position)          # in range with a clear shot — hold
+		else:
+			move_to(target.global_position)   # advance / reposition for a shot
+
+		# Fire only with a clear shot in range, so we never plug rounds into cover.
+		if clear_shot and distance <= sight_range and _time_until_next_shot <= 0.0:
 			_fire_at(target)
 			_time_until_next_shot = fire_cooldown
 	else:
-		move_to(global_position)              # nobody in sight — stand still
+		move_to(global_position)              # no player units left — stand down
 
 	# Hand off to the inherited Pawn movement, which actually walks us toward
 	# whatever move_to() target we just set (and applies gravity, etc.).
 	super._physics_process(delta)
 
-# The closest player unit within sight_range, or null if none are near enough.
+# The closest player unit anywhere on the map, or null if they're all gone. No
+# sight limit — enemies hunt the squad across the whole field; sight_range only
+# decides whether we actually open fire (see _physics_process).
 func _nearest_player_unit() -> Node3D:
 	var nearest: Node3D = null
-	var nearest_distance := sight_range     # ignore anything beyond our sight
+	var nearest_distance := INF
 	for unit in get_tree().get_nodes_in_group("units"):
 		var distance := global_position.distance_to(unit.global_position)
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest = unit
 	return nearest
+
+# True only if a straight line from our muzzle to the target is unobstructed —
+# i.e. the first thing the ray hits is the target itself, not cover or a fellow
+# enemy. Uses the same start/aim points as the actual shot, so what we check is
+# what we'd fire.
+func _has_clear_shot(target: Node3D) -> bool:
+	var from := global_position + Vector3.UP * 1.0
+	var to := target.global_position + Vector3.UP * 0.9
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	# Anything that could block the shot: cover (layer 2), other units
+	# (Enemy layer 8), and the player units we're aiming at (Player layer 4)...
+	query.collision_mask = 2 | 8 | 4
+	query.exclude = [get_rid()]           # ...but never our own body.
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	# Clear only if the very first thing the ray meets is the target.
+	return hit and hit.collider == target
 
 func _fire_at(target: Node3D) -> void:
 	if projectile_scene == null:

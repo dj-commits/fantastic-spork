@@ -104,12 +104,11 @@ func _seek_cover() -> void:
 		return                          # nowhere free to hide right now
 	spot.claim(self)
 	claimed_spot = spot
-	# The marker sits inside the cover's thickness (you can't stand there), so we
-	# walk to the nearest point on the navigation mesh instead — that lands us
-	# standing just beside the cover rather than trying to walk into it.
-	var stand_point := NavigationServer3D.map_get_closest_point(
-		nav_agent.get_navigation_map(), spot.global_position)
-	move_to(stand_point)
+	# Cover spots already sit just outside the cover (cover.gd places them there),
+	# so we can head straight to one. The nav agent re-plans the route each frame,
+	# so it self-corrects even if the navmesh wasn't ready the moment we asked —
+	# and because this is a real spot beside cover, it's never the world origin.
+	move_to(spot.global_position)
 
 # The closest cover spot that nobody has claimed, or null if there are none.
 func _nearest_available_cover() -> CoverSpot:

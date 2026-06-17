@@ -1,11 +1,9 @@
-extends Marker3D
+extends Node3D
 class_name CoverSpot
-# A single spot a unit can stand to take cover. These live on the edge markers
-# of a cover piece. At most one unit may "claim" a spot at a time, so units
-# naturally spread across different spots instead of all piling onto one.
-#
-# This is the first building block of the bigger unit-intelligence system: a
-# claimable point in the world that a behaviour (here, "seek cover") can reserve.
+# A single claimable standing position next to a piece of cover. Cover pieces
+# create these around themselves at runtime (see cover.gd). At most one unit may
+# claim a spot at a time, so units spread across different spots instead of all
+# piling onto one.
 
 var occupant: Node = null   # the unit currently holding this spot, or null if free
 

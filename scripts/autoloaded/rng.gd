@@ -38,6 +38,11 @@ func roll_variance(base: float, spread: float) -> float:
 func roll_range(minimum: float, maximum: float) -> float:
 	return _generator.randf_range(minimum, maximum)
 
+# A whole-number roll between minimum and maximum, both ends included.
+# e.g. roll_int(1, 6) is a six-sided die; roll_int(0, n - 1) picks a list index.
+func roll_int(minimum: int, maximum: int) -> int:
+	return _generator.randi_range(minimum, maximum)
+
 # Returns true "probability" of the time. chance(0.25) is true about 1 time in 4.
 # Handy for "does this happen?" decisions (a stagger, a miss, a bark, etc.).
 func chance(probability: float) -> bool:
