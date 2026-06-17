@@ -128,6 +128,16 @@ func _release_cover() -> void:
 		claimed_spot.release(self)
 		claimed_spot = null
 
+# True once this unit has actually REACHED the cover it claimed — not while it's
+# still out in the open running toward it. Enemies use this to prefer shooting
+# units that are exposed.
+func is_in_cover() -> bool:
+	if claimed_spot == null:
+		return false
+	var to_spot := claimed_spot.global_position - global_position
+	to_spot.y = 0.0
+	return to_spot.length() <= 1.0
+
 # How far we still are from our destination, measured FLAT along the ground (the
 # y is zeroed — see the long note in _physics_process for why that matters).
 func _remaining_distance() -> float:
