@@ -108,7 +108,9 @@ func _issue_move_order(screen_pos: Vector2) -> void:
 	var selected := _selected_units()
 	var targets := _formation_points(hit.position, selected.size())
 	for i in selected.size():
-		selected[i].move_to(targets[i])
+		# order_move_to (not move_to) so the unit drops any cover it had claimed
+		# — a manual order should override the unit's own cover-seeking.
+		selected[i].order_move_to(targets[i])
 
 func _selected_units() -> Array:
 	var result: Array = []

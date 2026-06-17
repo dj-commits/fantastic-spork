@@ -23,8 +23,12 @@ class_name Pawn
 ## no two units feel identical. 0.15 = each rolled stat lands within 15% either
 ## way. Set to 0 for fixed, uniform stats. (See Rng and _roll_stats.)
 @export var stat_variance: float = 0.15
+## When true, this unit drifts to the nearest open cover spot whenever it has
+## nothing else to do. Player units want this; enemies run their own brain.
+@export var auto_seek_cover: bool = true
 
 var health: float = 0.0              # current health; set to max_health on ready
+var claimed_spot: CoverSpot = null   # the cover spot we've reserved, if any
 
 @onready var selection_ring: MeshInstance3D = $SelectionRing
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
@@ -68,6 +72,7 @@ func take_damage(amount: float) -> void:
 		_die()
 
 func _die() -> void:
+	_release_cover()                # free our cover spot for someone else
 	# queue_free() also drops us out of every group we joined (units, enemies,
 	# control groups), so selection and enemy targeting tidy up after us for free.
 	queue_free()
@@ -77,25 +82,77 @@ func set_selected(value: bool) -> void:
 	is_selected = value
 	selection_ring.visible = value
 
-# Give this unit a place to walk to. Called when the player right-clicks ground.
-# We just hand the destination to the navigation agent; it figures out the route.
+# Give this unit a place to walk to. We just hand the destination to the
+# navigation agent; it figures out the route. (Used both by player orders and
+# by our own cover-seeking below.)
 func move_to(world_point: Vector3) -> void:
 	nav_agent.target_position = world_point
 
+# A manual order from the player. Unlike move_to, this first drops any cover we
+# were holding, so the player's command wins over our own cover-seeking.
+func order_move_to(world_point: Vector3) -> void:
+	_release_cover()
+	move_to(world_point)
+
+# --- Cover-seeking (the unit's first scrap of autonomy) --------------------
+
+# Reserve the nearest free cover spot and head for it. Called automatically when
+# we're idle (see _physics_process). Does nothing if every spot is taken.
+func _seek_cover() -> void:
+	var spot := _nearest_available_cover()
+	if spot == null:
+		return                          # nowhere free to hide right now
+	spot.claim(self)
+	claimed_spot = spot
+	# The marker sits inside the cover's thickness (you can't stand there), so we
+	# walk to the nearest point on the navigation mesh instead — that lands us
+	# standing just beside the cover rather than trying to walk into it.
+	var stand_point := NavigationServer3D.map_get_closest_point(
+		nav_agent.get_navigation_map(), spot.global_position)
+	move_to(stand_point)
+
+# The closest cover spot that nobody has claimed, or null if there are none.
+func _nearest_available_cover() -> CoverSpot:
+	var nearest: CoverSpot = null
+	var nearest_distance := INF
+	for spot in get_tree().get_nodes_in_group("cover_spots"):
+		if not spot.is_available():
+			continue
+		var distance := global_position.distance_to(spot.global_position)
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest = spot
+	return nearest
+
+func _release_cover() -> void:
+	if claimed_spot != null:
+		claimed_spot.release(self)
+		claimed_spot = null
+
+# How far we still are from our destination, measured FLAT along the ground (the
+# y is zeroed — see the long note in _physics_process for why that matters).
+func _remaining_distance() -> float:
+	var to_target := nav_agent.target_position - global_position
+	to_target.y = 0.0
+	return to_target.length()
+
 func _physics_process(delta: float) -> void:
+	# Idle behaviour: a unit with nothing to do (reached its target and hasn't
+	# claimed cover) quietly slides into the nearest open cover spot. Enemies set
+	# auto_seek_cover = false and run their own combat brain instead.
+	if auto_seek_cover and claimed_spot == null and _remaining_distance() <= stop_distance:
+		_seek_cover()
+
 	# First work out the velocity we WANT this frame ("desired"), then ease our
 	# real velocity toward it so we speed up and slow down smoothly.
 	var desired := Vector3.ZERO
 
-	# How far we still are from the FINAL destination, measured FLAT along the
-	# ground (we deliberately zero out the y). This is the crux of the jitter fix:
-	# a unit's origin sits at its waist (~0.9m up), but the target and navigation
-	# mesh sit on the floor. If we left that height gap in the distance, a unit
-	# standing right on its target would still read ~0.9m away — so it could never
-	# "arrive", and kept nudging back and forth. Flat distance really hits 0.
-	var to_target := nav_agent.target_position - global_position
-	to_target.y = 0.0
-	var remaining := to_target.length()
+	# How far we still are from the destination, measured FLAT along the ground
+	# (y zeroed). This is the crux of the jitter fix: a unit's origin sits at its
+	# waist (~0.9m up) but the target and navigation mesh sit on the floor. If we
+	# left that height gap in, a unit standing right on its target would read
+	# ~0.9m away — so it could never "arrive" and kept nudging back and forth.
+	var remaining := _remaining_distance()
 
 	# Keep steering until we're within stop_distance of the target. Once inside,
 	# desired stays zero, so we ease to a halt and stay put.

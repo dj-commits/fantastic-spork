@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://5g5nt0nwpff6"]
 
+[ext_resource type="Script" path="res://scripts/cover_spot.gd" id="1_coverspot"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_2q760"]
 size = Vector3(0.5, 2, 3)
 
@@ -18,6 +20,8 @@ shape = SubResource("BoxShape3D_2q760")
 
 [node name="RightEdgeMarker" type="Marker3D" parent="." unique_id=697750856]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2318828)
+script = ExtResource("1_coverspot")
 
 [node name="LeftEdgeMarker" type="Marker3D" parent="." unique_id=1394390551]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.2928197)
+script = ExtResource("1_coverspot")
