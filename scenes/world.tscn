@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://5g5nt0nwpff6" path="res://scenes/full_cover.tscn" id="3_4wyf3"]
 [ext_resource type="PackedScene" uid="uid://xg1isbwjppa2" path="res://scenes/pawn.tscn" id="4_k0juu"]
 [ext_resource type="Script" path="res://scripts/selection.gd" id="5_sel"]
+[ext_resource type="Script" path="res://scripts/navigation_region.gd" id="6_nav"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_k0juu"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -31,14 +32,17 @@ shadow_enabled = true
 [node name="CameraRig" parent="." unique_id=969316036 instance=ExtResource("1_f3sb7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.933, 2.212, 7.99)
 
-[node name="Ground" parent="." unique_id=477440008 instance=ExtResource("2_rwgxs")]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1500000020]
+script = ExtResource("6_nav")
 
-[node name="FullCoverContainer" type="Node3D" parent="." unique_id=994620643]
+[node name="Ground" parent="NavigationRegion3D" unique_id=477440008 instance=ExtResource("2_rwgxs")]
 
-[node name="FullCover" parent="FullCoverContainer" unique_id=1097359019 instance=ExtResource("3_4wyf3")]
+[node name="FullCoverContainer" type="Node3D" parent="NavigationRegion3D" unique_id=994620643]
+
+[node name="FullCover" parent="NavigationRegion3D/FullCoverContainer" unique_id=1097359019 instance=ExtResource("3_4wyf3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0005, 0)
 
-[node name="FullCover2" parent="FullCoverContainer" unique_id=1082923514 instance=ExtResource("3_4wyf3")]
+[node name="FullCover2" parent="NavigationRegion3D/FullCoverContainer" unique_id=1082923514 instance=ExtResource("3_4wyf3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
 
 [node name="Pawn" parent="." unique_id=2093764878 instance=ExtResource("4_k0juu")]
