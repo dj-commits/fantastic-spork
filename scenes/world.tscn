@@ -6,6 +6,10 @@
 [ext_resource type="PackedScene" uid="uid://xg1isbwjppa2" path="res://scenes/pawn.tscn" id="4_k0juu"]
 [ext_resource type="Script" path="res://scripts/selection.gd" id="5_sel"]
 [ext_resource type="Script" path="res://scripts/navigation_region.gd" id="6_nav"]
+[ext_resource type="PackedScene" path="res://scenes/cover_1x1x1.tscn" id="7_cov1"]
+[ext_resource type="PackedScene" path="res://scenes/cover_2x2x2.tscn" id="8_cov2"]
+[ext_resource type="PackedScene" path="res://scenes/cover_4x4x4.tscn" id="9_cov4"]
+[ext_resource type="PackedScene" path="res://scenes/enemy.tscn" id="10_enemy"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_k0juu"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -45,6 +49,38 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0005, 0)
 [node name="FullCover2" parent="NavigationRegion3D/FullCoverContainer" unique_id=1082923514 instance=ExtResource("3_4wyf3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4)
 
+[node name="ExtraCover" type="Node3D" parent="NavigationRegion3D"]
+
+[node name="Cover2x2x2_a" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("8_cov2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 3)
+
+[node name="Cover2x2x2_b" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("8_cov2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, -6)
+
+[node name="Cover2x2x2_c" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("8_cov2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, -10)
+
+[node name="Cover2x2x2_d" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("8_cov2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1, 6)
+
+[node name="Cover4x4x4_a" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("9_cov4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 2, -4)
+
+[node name="Cover4x4x4_b" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("9_cov4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, -2)
+
+[node name="Cover4x4x4_c" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("9_cov4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 12)
+
+[node name="Cover1x1x1_a" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("7_cov1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 8)
+
+[node name="Cover1x1x1_b" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("7_cov1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 12)
+
+[node name="Cover1x1x1_c" parent="NavigationRegion3D/ExtraCover" instance=ExtResource("7_cov1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0.5, 4)
+
 [node name="Pawn" parent="." unique_id=2093764878 instance=ExtResource("4_k0juu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2159889, 0.9004998, -0.049676538)
 
@@ -59,6 +95,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.9, 2.0)
 
 [node name="Pawn5" parent="." unique_id=2093764882 instance=ExtResource("4_k0juu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 0.9, 2.0)
+
+[node name="Enemy1" parent="." instance=ExtResource("10_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.9, -8)
+
+[node name="Enemy2" parent="." instance=ExtResource("10_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.9, -12)
+
+[node name="Enemy3" parent="." instance=ExtResource("10_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.9, 9)
+
+[node name="Enemy4" parent="." instance=ExtResource("10_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.9, 11)
+
+[node name="Enemy5" parent="." instance=ExtResource("10_enemy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.9, 14)
 
 [node name="SelectionLayer" type="CanvasLayer" parent="." unique_id=1500000010]
 

@@ -1,21 +1,34 @@
 extends CharacterBody3D
-# A single selectable RTS unit.
+class_name Pawn
+# The base RTS unit. Player units use this script directly; enemies extend it
+# (see enemy.gd) to reuse all the movement, navigation and health below while
+# adding their own combat behaviour.
+#
 # The selection system (selection.gd) calls set_selected() to highlight us and
 # move_to() to give us a destination. From there we walk there ourselves,
 # following a path (worked out by the NavigationAgent3D) that bends around
 # obstacles like the cover boxes instead of trying to plow straight through.
 
+## Top walking speed, in meters per second.
+@export var move_speed: float = 4.0
 ## Within this many meters of the destination we ease our speed down, so we
 ## glide to a gentle stop instead of charging in at full speed and overshooting.
 @export var arrival_distance: float = 3.5
 ## Once we're this close to the destination (measured flat along the ground) we
 ## call it "arrived" and stop. (Measured flat — see _physics_process.)
 @export var stop_distance: float = 0.3
+## How much damage this unit can absorb before it dies.
+@export var max_health: float = 100.0
+## How much this unit's stats vary from their listed values, as a fraction, so
+## no two units feel identical. 0.15 = each rolled stat lands within 15% either
+## way. Set to 0 for fixed, uniform stats. (See Rng and _roll_stats.)
+@export var stat_variance: float = 0.15
+
+var health: float = 0.0              # current health; set to max_health on ready
 
 @onready var selection_ring: MeshInstance3D = $SelectionRing
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
-const MOVE_SPEED: float = 4.0        # top walking speed, in meters per second
 # How quickly we change speed, in meters per second, *per second*. This is what
 # stops movement feeling robotic: instead of snapping to full speed and to a
 # dead stop, we ramp up and ease down. Lower = heavier / more gradual.
@@ -25,13 +38,39 @@ const GRAVITY: float = 20.0          # downward pull so we stay stuck to the gro
 var is_selected: bool = false
 
 func _ready() -> void:
-	# Join the "units" group so the selection system can find every unit at once.
-	add_to_group("units")
+	_roll_stats()                   # give this unit its own slightly-varied stats
 	set_selected(false)             # start unselected (ring hidden)
+	health = max_health             # start at full health (after the roll above)
 	# Target our own spot to begin with, so we sit still until given an order.
 	# (A NavigationAgent3D's default target is the world origin, so without this
 	# every unit would immediately wander off toward (0,0,0) on startup.)
 	nav_agent.target_position = global_position
+	_register_team()
+
+# Roll this unit's personal stats on spawn so units don't all feel identical.
+# Subclasses override this to roll their own extra stats — and should call
+# super._roll_stats() so this health roll still happens. Adding variance to a
+# new stat is a one-liner: stat = Rng.roll_variance(stat, stat_variance).
+func _roll_stats() -> void:
+	move_speed = Rng.roll_variance(move_speed, stat_variance)
+	max_health = Rng.roll_variance(max_health, stat_variance)
+
+# Which group this unit belongs to. Player units are selectable, so they join
+# "units" (the group the selection system searches). Enemies override this to
+# join "enemies" instead, which keeps them out of the player's selection.
+func _register_team() -> void:
+	add_to_group("units")
+
+# Take a hit from an incoming projectile. Calling _die() once we run out of health.
+func take_damage(amount: float) -> void:
+	health -= amount
+	if health <= 0.0:
+		_die()
+
+func _die() -> void:
+	# queue_free() also drops us out of every group we joined (units, enemies,
+	# control groups), so selection and enemy targeting tidy up after us for free.
+	queue_free()
 
 # Highlight / un-highlight this unit. Called by the selection system.
 func set_selected(value: bool) -> void:
@@ -69,11 +108,11 @@ func _physics_process(delta: float) -> void:
 		if to_next.length() > 0.01:     # guard so we never normalize a zero vector
 			# Pick a speed: full speed normally, eased down over the last
 			# "arrival_distance" meters so we glide to a gentle stop.
-			var speed := MOVE_SPEED
+			var speed := move_speed
 			if remaining < arrival_distance:
 				# remaining / arrival_distance slides from 1.0 down to 0.0 as we
 				# close in, easing the speed off the nearer we get.
-				speed = MOVE_SPEED * (remaining / arrival_distance)
+				speed = move_speed * (remaining / arrival_distance)
 			# normalized() = "pure direction"; times speed = "that way, this fast".
 			desired = to_next.normalized() * speed
 

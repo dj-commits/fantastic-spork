@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_cover1"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cover1"]
+size = Vector3(1, 1, 1)
+
+[node name="Cover1x1x1" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_cover1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_cover1")
